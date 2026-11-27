@@ -195,6 +195,28 @@ object TridentMods {
         }
     }
 
+    private fun directUrl(name: String) = "https://github.com/$JAR_REPO/releases/download/$ROLLING_TAG/$name"
+
+    private fun installDirect(dir: File, mc: String, have: Boolean, entry: JsonObject?, index: MutableMap<String, JsonObject>, log: (String) -> Unit) {
+        if (have) return
+        val name = "trident-client-$mc.jar"
+        for (candidate in listOf(name, "nova-client-$mc.jar")) {
+            try {
+                download(directUrl(candidate), File(dir, name), null)
+                entry?.str("file")?.let { old -> if (old != name) File(dir, old).delete() }
+                index["trident"] = buildJsonObject {
+                    put("file", name)
+                    put("updated", "direct")
+                    put("checked", System.currentTimeMillis())
+                }
+                log("[Trident] Trident Client para $mc instalado.")
+                return
+            } catch (_: Exception) {
+            }
+        }
+        log("[Trident] Trident Client todavía no tiene versión para Minecraft $mc.")
+    }
+
     private fun ensureTridentJar(dir: File, mc: String, index: MutableMap<String, JsonObject>, log: (String) -> Unit) {
         val entry = index["trident"]
         val have = entry != null && present(dir, entry.str("file"))
@@ -203,17 +225,17 @@ object TridentMods {
         val release = try {
             getJson("https://api.github.com/repos/$JAR_REPO/releases/tags/$ROLLING_TAG") as? JsonObject
         } catch (e: Exception) {
-            log("[Trident] No se pudo consultar GitHub (${e.message}).")
-            return
-        } ?: run {
-            log("[Trident] No se encontró el release «$ROLLING_TAG».")
+            null
+        }
+        if (release == null) {
+            installDirect(dir, mc, have, entry, index, log)
             return
         }
         val assets = (release["assets"] as? JsonArray)?.mapNotNull { it as? JsonObject }.orEmpty()
         val asset = listOf("trident-client-$mc.jar", "nova-client-$mc.jar")
             .firstNotNullOfOrNull { n -> assets.firstOrNull { it.str("name") == n } }
         if (asset == null) {
-            log("[Trident] Trident Client todavía no tiene versión para Minecraft $mc.")
+            installDirect(dir, mc, have, entry, index, log)
             return
         }
         val updated = asset.str("updated_at").orEmpty()
@@ -227,10 +249,12 @@ object TridentMods {
             return
         }
         if (entry?.str("file") != null && File(dir, "${entry.str("file")}.disabled").isFile) return
-        val url = asset.str("browser_download_url") ?: return
+        val url = asset.str("browser_download_url") ?: directUrl(asset.str("name") ?: name)
         try {
-            entry?.str("file")?.let { old -> if (old != name) File(dir, old).delete() }
-            download(url, File(dir, name), null)
+            download(url, File(dir, name + ".new"), null)
+            entry?.str("file")?.let { old -> File(dir, old).delete() }
+            File(dir, name).delete()
+            File(dir, name + ".new").renameTo(File(dir, name))
             index["trident"] = buildJsonObject {
                 put("file", name)
                 put("updated", updated)
@@ -238,6 +262,7 @@ object TridentMods {
             }
             log("[Trident] Trident Client para $mc instalado.")
         } catch (e: Exception) {
+            File(dir, name + ".new").delete()
             log("[Trident] No se pudo bajar Trident Client: ${e.message}")
         }
     }

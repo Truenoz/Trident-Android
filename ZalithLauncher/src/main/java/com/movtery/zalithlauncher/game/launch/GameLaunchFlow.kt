@@ -210,6 +210,23 @@ class GameLaunchFlow(scope: CoroutineScope) {
                 }
             }
 
+            if (!TridentMods.isFabric(version)) {
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Esta versión no tiene Fabric: Trident Client y sus mods solo se instalan en versiones Fabric.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+            } else if (!hasNetwork) {
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    android.widget.Toast.makeText(
+                        context,
+                        "Sin internet: no se pudieron instalar los mods de Trident.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
             if (hasNetwork && TridentMods.isFabric(version)) {
                 addTask(
                     icon = R.drawable.ic_extension_outlined,
