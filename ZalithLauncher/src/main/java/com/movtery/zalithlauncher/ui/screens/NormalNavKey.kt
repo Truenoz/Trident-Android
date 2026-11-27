@@ -64,6 +64,10 @@ sealed interface NormalNavKey : TitledNavKey {
         @Contextual override val title: AndroidStringText = androidText(R.string.terracotta_terracotta)
     }
 
+    @Serializable data object Trident: NormalNavKey {
+        @Contextual override val title: AndroidStringText = androidText("Trident Client")
+    }
+
     /** 查看日志屏幕 */
     @Serializable data class LogView(
         val logPath: String

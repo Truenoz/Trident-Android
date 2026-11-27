@@ -58,13 +58,11 @@ import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.game.plugin.ApkPlugin
 import com.movtery.zalithlauncher.game.plugin.PluginLoader
 import com.movtery.zalithlauncher.game.plugin.appCacheIcon
-import com.movtery.zalithlauncher.launcherName
 import com.movtery.zalithlauncher.library.LibraryInfo
 import com.movtery.zalithlauncher.library.libraryData
 import com.movtery.zalithlauncher.path.URL_COMMUNITY
 import com.movtery.zalithlauncher.path.URL_MCMOD
 import com.movtery.zalithlauncher.path.URL_PROJECT
-import com.movtery.zalithlauncher.path.URL_SUPPORT
 import com.movtery.zalithlauncher.path.URL_WEBLATE
 import com.movtery.zalithlauncher.ui.base.BaseScreen
 import com.movtery.zalithlauncher.ui.components.AnimatedLazyColumn
@@ -104,18 +102,12 @@ fun AboutInfoScreen(
                     title = stringResource(R.string.about_launcher_title)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        val launcherName = remember { launcherName() }
 
                         ButtonIconItem(
                             icon = painterResource(R.drawable.img_launcher),
                             title = BuildKeys.LAUNCHER_NAME,
                             text = stringResource(R.string.about_launcher_version, BuildConfig.VERSION_NAME),
                             button = {
-                                Button(
-                                    onClick = checkUpdate
-                                ) {
-                                    Text(text = stringResource(R.string.upgrade_title))
-                                }
                                 Button(
                                     onClick = { openLink(URL_PROJECT) }
                                 ) {
@@ -124,18 +116,6 @@ fun AboutInfoScreen(
                             }
                         )
 
-                        ButtonIconItem(
-                            icon = painterResource(R.drawable.img_avatar_movtery),
-                            title = stringResource(R.string.about_launcher_author_movtery_title),
-                            text = stringResource(R.string.about_launcher_author_movtery_text, launcherName),
-                            button = {
-                                Button(
-                                    onClick = { openLink(URL_SUPPORT) }
-                                ) {
-                                    Text(text = stringResource(R.string.about_sponsor))
-                                }
-                            }
-                        )
                     }
                 }
             }
@@ -146,19 +126,12 @@ fun AboutInfoScreen(
                     title = stringResource(R.string.about_acknowledgements_title)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        val launcherName = remember { launcherName() }
 
-                        ButtonIconItem(
-                            icon = painterResource(R.drawable.img_sponsor),
-                            title = stringResource(R.string.about_sponsors_title),
-                            text = stringResource(R.string.about_sponsors_summary, launcherName),
-                            button = {
-                                Button(
-                                    onClick = onViewSponsors
-                                ) {
-                                    Text(text = stringResource(R.string.generic_view))
-                                }
-                            }
+                        LinkIconItem(
+                            icon = painterResource(R.drawable.img_avatar_movtery),
+                            title = "Zalith Launcher 2",
+                            text = "Por MovTery y colaboradores. Licencia GPL-3.0.",
+                            openLink = { openLink("https://github.com/ZalithLauncher/ZalithLauncher2") }
                         )
 
                         ButtonIconItem(

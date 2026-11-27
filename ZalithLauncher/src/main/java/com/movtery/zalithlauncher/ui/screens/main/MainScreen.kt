@@ -18,6 +18,11 @@
 
 package com.movtery.zalithlauncher.ui.screens.main
 
+import com.movtery.zalithlauncher.trident.TridentNet
+import com.movtery.zalithlauncher.trident.TridentScreen
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.shape.CircleShape
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -202,6 +207,12 @@ fun MainScreen(
                         screenKey = NormalNavKey.Multiplayer
                     )
                 },
+                toTridentScreen = {
+                    screenBackStackModel.mainScreen.removeAndNavigateTo(
+                        removes = screenBackStackModel.clearBeforeNavKeys,
+                        screenKey = NormalNavKey.Trident
+                    )
+                },
                 openFileManager = {
                     eventViewModel.sendEvent(
                         EventViewModel.Event.OpenFileManager(
@@ -259,12 +270,20 @@ private fun <E: TitledNavKey> TopBar(
     toSettingsScreen: () -> Unit,
     toDownloadScreen: () -> Unit,
     toMultiplayerScreen: () -> Unit,
+    toTridentScreen: () -> Unit,
     openFileManager: () -> Unit,
     changeExpandedState: () -> Unit,
 ) {
     val festivals = LocalFestivals.current
 
     val inMultiplayerScreen = mainScreenKey is NormalNavKey.Multiplayer
+    val inTridentScreen = mainScreenKey is NormalNavKey.Trident
+    val onlineCount by produceState<Int?>(initialValue = null) {
+        while (true) {
+            TridentNet.pingOnline()?.let { value = it }
+            delay(60_000)
+        }
+    }
     val inDownloadScreen = mainScreenKey is NestedNavKey.Download
     val inSettingsScreen = mainScreenKey is NestedNavKey.Settings
 
@@ -343,7 +362,7 @@ private fun <E: TitledNavKey> TopBar(
                 if (parent == null) {
                     if (festivals.isEmpty()) {
                         Text(
-                            text = BuildKeys.LAUNCHER_IDENTIFIER,
+                            text = BuildKeys.LAUNCHER_NAME,
                             style = style,
                             softWrap = softWarp,
                             maxLines = maxLines
@@ -407,6 +426,35 @@ private fun <E: TitledNavKey> TopBar(
                         )
                     }
                 }
+
+                onlineCount?.let { count ->
+                    Row(
+                        modifier = Modifier
+                            .clip(shape = MaterialTheme.shapes.large)
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(8.dp),
+                            shape = CircleShape,
+                            color = Color(0xFF34D058)
+                        ) {}
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "$count en línea",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+
+                TopBarRailItem(
+                    selected = inTridentScreen,
+                    painter = painterResource(R.drawable.ic_trident),
+                    text = "Trident",
+                    onClick = {
+                        if (!inTridentScreen) toTridentScreen()
+                    },
+                )
 
                 IconButton(
                     onClick = openFileManager
@@ -645,6 +693,11 @@ private fun NavigationUI(
                         addonInfoScreenKey = key.currentKey,
                         eventViewModel = eventViewModel,
                         submitError = submitError,
+                    )
+                }
+                entry<NormalNavKey.Trident> {
+                    TridentScreen(
+                        backScreenViewModel = screenBackStackModel
                     )
                 }
                 entry<NormalNavKey.Multiplayer> {

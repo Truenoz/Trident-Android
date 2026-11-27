@@ -18,7 +18,6 @@
 
 package com.movtery.zalithlauncher.setting
 
-import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.materialkolor.PaletteStyle
@@ -36,24 +35,23 @@ object LauncherSettings : SettingsRegistry() {
      */
     val launcherColorTheme = enumSetting(
         "launcherColorTheme",
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) ColorThemeType.DYNAMIC
-        else ColorThemeType.EMBERMIRE
+        ColorThemeType.CUSTOM
     )
 
     /**
      * 自定义颜色主题色
      */
-    val launcherCustomColor = intSetting("launcherCustomColor", Color.Blue.toArgb())
+    val launcherCustomColor = intSetting("launcherCustomColor", Color(0xFFE53946).toArgb())
 
     /**
      * 自定义颜色配色风格
      */
-    val launcherCustomPaletteStyle = enumSetting("launcherCustomPaletteStyle", PaletteStyle.TonalSpot)
+    val launcherCustomPaletteStyle = enumSetting("launcherCustomPaletteStyle", PaletteStyle.Fidelity)
 
     /**
      * 启动器UI深色主题
      */
-    val launcherDarkMode = enumSetting("launcherDarkMode", DarkMode.FollowSystem)
+    val launcherDarkMode = enumSetting("launcherDarkMode", DarkMode.Enable)
 
     /**
      * 启动器语言

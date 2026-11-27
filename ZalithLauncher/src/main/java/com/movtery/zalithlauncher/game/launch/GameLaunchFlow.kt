@@ -19,6 +19,7 @@
 package com.movtery.zalithlauncher.game.launch
 
 import android.content.Context
+import android.util.Log
 import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.coroutine.Task
 import com.movtery.zalithlauncher.coroutine.TaskFlowExecutor
@@ -54,6 +55,7 @@ import com.movtery.zalithlauncher.game.version.mod.isEnabled
 import com.movtery.zalithlauncher.game.versioninfo.models.GameManifest
 import com.movtery.zalithlauncher.ui.activities.runGame
 import com.movtery.zalithlauncher.ui.androidText
+import com.movtery.zalithlauncher.trident.TridentMods
 import com.movtery.zalithlauncher.utils.GSON
 import com.movtery.zalithlauncher.utils.network.isNetworkAvailable
 import com.movtery.zalithlauncher.utils.string.getMessageOrToString
@@ -204,6 +206,19 @@ class GameLaunchFlow(scope: CoroutineScope) {
                     } catch (e: Throwable) {
                         if (e.isReloginRequired()) throw LaunchReloginRequired(account)
                         throw LaunchCheckFailed(account, e)
+                    }
+                }
+            }
+
+            if (hasNetwork && TridentMods.isFabric(version)) {
+                addTask(
+                    icon = R.drawable.ic_extension_outlined,
+                    title = androidText("Preparando Trident Client"),
+                    dispatcher = Dispatchers.IO
+                ) { task ->
+                    TridentMods.prepare(version, account) { line ->
+                        Log.i("Trident", line)
+                        task.updateMessage(androidText(line))
                     }
                 }
             }

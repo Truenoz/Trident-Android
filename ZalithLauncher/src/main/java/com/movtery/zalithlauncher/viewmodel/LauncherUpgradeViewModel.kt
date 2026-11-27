@@ -189,35 +189,7 @@ class LauncherUpgradeViewModel: ViewModel() {
     /**
      * 从远端获取最新的启动器信息
      */
-    private suspend fun fetchRemoteData(): RemoteData? {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                withRetry(logTag = "LauncherUpgrade", maxRetries = 2) {
-                    //获取最新的启动器信息
-                    val api = GLOBAL_CLIENT.get(LATEST_API_URL).safeBodyAsJson<GithubContentApi>()
-                    //需要Base64解密
-                    val contentString = decodeBase64(api.content)
-                    GLOBAL_JSON.decodeFromString(RemoteData.serializer(), contentString)
-                }
-            }.getOrElse { e ->
-                if (Locale.getDefault().language == "zh") {
-                    runCatching {
-                        Logger.info(TAG, "Check for updates in the Chinese region.")
-                        //在中国地区，可能因为无法访问 Github API 导致获取更新信息失败
-                        withRetry(logTag = "LauncherUpgrade_Chinese", maxRetries = 2) {
-                            GLOBAL_CLIENT.get(LATEST_API_CHINESE_URL).safeBodyAsJson<RemoteData>()
-                        }
-                    }.getOrElse { e ->
-                        Logger.warning(TAG, "Failed to check for launcher upgrade!", e)
-                        null
-                    }
-                } else {
-                    Logger.warning(TAG, "Failed to check for launcher upgrade!", e)
-                    null
-                }
-            }
-        }
-    }
+    private suspend fun fetchRemoteData(): RemoteData? = null
 
     /**
      * 检查启动器是否需要更新
