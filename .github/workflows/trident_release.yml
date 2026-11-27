@@ -54,19 +54,28 @@ jobs:
             echo "::error::La llave guardada no abre con TRIDENT_SIGNING_PASSWORD. Si cambiaste la contraseña, volvé a poner la anterior."
             exit 1
           fi
+          python3 - <<'PY'
+          import os
+          p = os.environ["TRIDENT_SIGNING_PASSWORD"]
+          print(f"::notice::Contraseña: {len(p)} caracteres, espacios al borde: {p != p.strip()}, saltos de línea: {chr(10) in p or chr(13) in p}, no ASCII: {sum(1 for c in p if ord(c) > 126)}")
+          PY
+          echo "::notice::Creando la llave"
           keytool -genkeypair -keystore "$RUNNER_TEMP/trident.jks" -storetype PKCS12 -alias trident \
             -keyalg RSA -keysize 4096 -validity 36500 \
             -storepass:env TRIDENT_SIGNING_PASSWORD -keypass:env TRIDENT_SIGNING_PASSWORD \
             -dname "CN=Trident Client, O=Trident Client"
+          echo "::notice::Llave creada, cifrando"
           openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
             -in "$RUNNER_TEMP/trident.jks" -out ZalithLauncher/trident.jks.enc -pass env:TRIDENT_SIGNING_PASSWORD
+          echo "::notice::Comprobando la llave"
           keytool -list -keystore "$RUNNER_TEMP/trident.jks" -storetype PKCS12 -storepass:env TRIDENT_SIGNING_PASSWORD >/dev/null
           rm -f "$RUNNER_TEMP/trident.jks"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ZalithLauncher/trident.jks.enc
           git commit -m "Llave de firma de Trident Client (cifrada)"
-          git push
+          echo "::notice::Guardando la llave en el repo"
+          git push || { echo "::error::No se pudo guardar la llave en el repo (git push)."; exit 1; }
 
       - id: done
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
