@@ -18,6 +18,7 @@
 
 package com.movtery.zalithlauncher.setting
 
+import com.movtery.zalithlauncher.game.control.TRIDENT_LAYOUT_FILE
 import com.movtery.zalithlauncher.setting.enums.GamepadInputMode
 import com.movtery.zalithlauncher.setting.enums.GestureActionType
 import com.movtery.zalithlauncher.setting.enums.MouseControlMode
@@ -166,7 +167,7 @@ object ControlSettings : SettingsRegistry() {
     /**
      * 手势控制
      */
-    val gestureControl = boolSetting("gestureControl", false)
+    val gestureControl = boolSetting("gestureControl", true)
 
     /**
      * 手势控制点击时触发的鼠标按钮
@@ -221,5 +222,5 @@ object ControlSettings : SettingsRegistry() {
     /**
      * 全局默认控制布局文件名
      */
-    val controlLayout = stringSetting("controlLayout", "")
+    val controlLayout = stringSetting("controlLayout", TRIDENT_LAYOUT_FILE)
 }

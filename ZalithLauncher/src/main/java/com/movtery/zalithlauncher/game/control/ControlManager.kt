@@ -49,6 +49,8 @@ private const val TAG = "ControlManager"
 /**
  * 控制布局管理者
  */
+const val TRIDENT_LAYOUT_FILE = "trident-bedrock.json"
+
 object ControlManager {
     private val scope = CoroutineScope(Dispatchers.IO)
 
@@ -83,6 +85,7 @@ object ControlManager {
             if (files.isEmpty()) {
                 unpackDefaultControl(context)
             }
+            unpackTridentControl(context)
             refresh()
         }
     }
@@ -158,6 +161,19 @@ object ControlManager {
             context.copyAssetFile(fileName = "default_layout.json", output = file, overwrite = false)
         } catch (e: Exception) {
             Logger.warning(TAG, "Failed to unpack default control layout", e)
+        }
+    }
+
+    private suspend fun unpackTridentControl(
+        context: Context
+    ) = withContext(Dispatchers.IO) {
+        try {
+            val file = File(PathManager.DIR_CONTROL_LAYOUTS, TRIDENT_LAYOUT_FILE)
+            if (!file.exists()) {
+                context.copyAssetFile(fileName = "trident_bedrock_layout.json", output = file, overwrite = false)
+            }
+        } catch (e: Exception) {
+            Logger.warning(TAG, "Failed to unpack Trident control layout", e)
         }
     }
 
