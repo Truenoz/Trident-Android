@@ -220,6 +220,10 @@ class MainActivity : BaseAppCompatActivity() {
         PluginLoader.loadAllPlugins(this, false)
         refreshData()
 
+        lifecycleScope.launch {
+            backgroundViewModel.installTridentDefault(this@MainActivity)
+        }
+
         //注册文件管理器事件监听
         fmEventRegistrar = FileManagerEventRegistrar(this, ::onFileManagerEvent).also { it.start() }
 

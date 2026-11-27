@@ -18,6 +18,9 @@
 
 package com.movtery.zalithlauncher.ui.theme
 
+import androidx.compose.material3.Shapes
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 import android.os.Build
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.material3.ColorScheme
@@ -598,6 +601,22 @@ private fun customDark(
         primary = color,
         isDark = true,
         style = style,
+    ).copy(
+        primary = color,
+        onPrimary = Color.White,
+        background = Color(0xFF050507),
+        onBackground = Color(0xFFF5F5F7),
+        surface = Color(0xFF0B0B0F),
+        onSurface = Color(0xFFF5F5F7),
+        surfaceVariant = Color(0xFF1C1C21),
+        onSurfaceVariant = Color(0xFFA1A1AA),
+        surfaceContainerLowest = Color(0xFF050507),
+        surfaceContainerLow = Color(0xFF0E0E12),
+        surfaceContainer = Color(0xFF131318),
+        surfaceContainerHigh = Color(0xFF1A1A20),
+        surfaceContainerHighest = Color(0xFF222229),
+        outline = Color(0xFF3A3A42),
+        outlineVariant = Color(0xFF26262C),
     )
 }
 
@@ -683,8 +702,17 @@ fun ZalithLauncherTheme(
         MaterialExpressiveTheme(
             colorScheme = currentDisplayScheme,
             motionScheme = MotionScheme.expressive(),
+            shapes = TridentShapes,
             typography = AppTypography,
             content = content
         )
     }
 }
+
+private val TridentShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(28.dp)
+)

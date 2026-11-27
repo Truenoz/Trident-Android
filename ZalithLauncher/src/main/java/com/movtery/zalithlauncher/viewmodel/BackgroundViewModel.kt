@@ -196,6 +196,24 @@ class BackgroundViewModel: ViewModel() {
         }
     }
 
+    suspend fun installTridentDefault(context: Context) {
+        withContext(Dispatchers.IO) {
+            val flag = File(PathManager.DIR_FILES_PRIVATE, "trident/background-installed")
+            if (flag.exists()) return@withContext
+            runCatching {
+                if (!backgroundFile.exists()) {
+                    backgroundFile.parentFile?.mkdirs()
+                    context.assets.open("trident_background.jpg").use { input ->
+                        backgroundFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                }
+                flag.parentFile?.mkdirs()
+                flag.writeText("1")
+            }
+            updateState()
+        }
+    }
+
     suspend fun delete() {
         withContext(Dispatchers.IO) {
             FileUtils.deleteQuietly(backgroundFile)

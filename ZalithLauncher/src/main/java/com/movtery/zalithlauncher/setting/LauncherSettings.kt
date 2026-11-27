@@ -101,7 +101,7 @@ object LauncherSettings : SettingsRegistry() {
     /**
      * 启动器背景模糊效果
      */
-    val backgroundBlur = intSetting("backgroundBlur", 0, 0..40)
+    val backgroundBlur = intSetting("backgroundBlur", 18, 0..40)
 
     /**
      * 启动器背景模糊效果类型

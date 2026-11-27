@@ -18,6 +18,12 @@
 
 package com.movtery.zalithlauncher.ui.screens.content
 
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -489,16 +495,26 @@ private fun VersionsContent(
                 }
             }
 
-            // 启动游戏按钮
-            ScalingIconButton(
+            Button(
                 modifier = Modifier.padding(end = 8.dp),
                 onClick = {
                     onLaunchGame(null)
-                }
+                },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE53946),
+                    contentColor = Color.White
+                ),
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_play_arrow_filled),
-                    contentDescription = stringResource(R.string.main_launch_game),
+                    contentDescription = null,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.main_launch_game),
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
