@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - '**'
+      - '!trident'
   workflow_dispatch:
 
 jobs:

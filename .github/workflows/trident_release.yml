@@ -1,0 +1,169 @@
+name: Publicar Trident Client (Android)
+
+on:
+  push:
+    branches:
+      - trident
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trident-release
+  cancel-in-progress: true
+
+jobs:
+  key:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.done.outputs.sha }}
+    env:
+      TRIDENT_SIGNING_PASSWORD: ${{ secrets.TRIDENT_SIGNING_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Comprobar la contraseña de firma
+        run: |
+          if [ -z "$TRIDENT_SIGNING_PASSWORD" ]; then
+            echo "::error::Falta el secreto TRIDENT_SIGNING_PASSWORD (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          if [ ${#TRIDENT_SIGNING_PASSWORD} -lt 12 ]; then
+            echo "::error::TRIDENT_SIGNING_PASSWORD tiene que tener al menos 12 caracteres."
+            exit 1
+          fi
+
+      - name: Crear la llave de firma (solo la primera vez)
+        run: |
+          if [ -f ZalithLauncher/trident.jks.enc ]; then
+            echo "La llave ya existe."
+            exit 0
+          fi
+          keytool -genkeypair -keystore "$RUNNER_TEMP/trident.jks" -storetype PKCS12 -alias trident \
+            -keyalg RSA -keysize 4096 -validity 36500 \
+            -storepass:env TRIDENT_SIGNING_PASSWORD -keypass:env TRIDENT_SIGNING_PASSWORD \
+            -dname "CN=Trident Client, O=Trident Client"
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+            -in "$RUNNER_TEMP/trident.jks" -out ZalithLauncher/trident.jks.enc -pass env:TRIDENT_SIGNING_PASSWORD
+          rm -f "$RUNNER_TEMP/trident.jks"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ZalithLauncher/trident.jks.enc
+          git commit -m "Llave de firma de Trident Client (cifrada)"
+          git push
+
+      - id: done
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: key
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: ["arm64", "all"]
+      fail-fast: false
+    env:
+      TRIDENT_SIGNING_PASSWORD: ${{ secrets.TRIDENT_SIGNING_PASSWORD }}
+      OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+      CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.key.outputs.sha }}
+          submodules: recursive
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            PetLib/rust/target
+          key: petlib-rust-${{ runner.os }}-${{ hashFiles('PetLib/rust/Cargo.lock') }}
+          restore-keys: petlib-rust-${{ runner.os }}-
+
+      - name: Instalar cargo-ndk
+        run: |
+          version="4.1.2"
+          curl -sL "https://github.com/bbqsrc/cargo-ndk/releases/download/v${version}/cargo-ndk-x86_64-unknown-linux-gnu-v${version}.tgz" |
+            tar xz -C "$HOME/.cargo/bin" --strip-components=1
+          chmod +x "$HOME/.cargo/bin"/cargo-ndk*
+
+      - name: Preparar el NDK
+        run: |
+          ndk=$(ls -d "$ANDROID_HOME"/ndk/* 2>/dev/null | sort -V | tail -1)
+          if [ -z "$ndk" ] || [ ! -f "$ndk/source.properties" ]; then
+            sdkmanager --install "ndk;27.0.12077973"
+            ndk=$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)
+          fi
+          echo "ANDROID_NDK_HOME=$ndk" >> "$GITHUB_ENV"
+
+      - name: Descifrar la llave de firma
+        run: |
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in ZalithLauncher/trident.jks.enc -out "$RUNNER_TEMP/trident.jks" -pass env:TRIDENT_SIGNING_PASSWORD
+          {
+            echo "TRIDENT_KEYSTORE=$RUNNER_TEMP/trident.jks"
+            echo "TRIDENT_KEY_ALIAS=trident"
+            echo "STORE_PASSWORD=$TRIDENT_SIGNING_PASSWORD"
+            echo "KEY_PASSWORD=$TRIDENT_SIGNING_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Compilar
+        run: |
+          chmod +x gradlew
+          ./gradlew ZalithLauncher:assembleRelease -Darch=${{ matrix.arch }}
+
+      - name: Nombre final
+        run: |
+          mkdir -p out
+          f=$(ls ZalithLauncher/build/outputs/apk/release/*.apk | head -n 1)
+          test -n "$f"
+          if [ "${{ matrix.arch }}" = "all" ]; then
+            cp "$f" out/Trident-Client-Android-universal.apk
+          else
+            cp "$f" out/Trident-Client-Android.apk
+          fi
+          rm -f "$RUNNER_TEMP/trident.jks"
+          ls -la out
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: apk-${{ matrix.arch }}
+          path: out/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Publicar en Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ls -la out
+          tag="android"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Trident Client para Android" \
+              --notes "Descargá Trident-Client-Android.apk (o la versión universal si tu celular es muy viejo)." \
+              --latest
+          fi
+          gh release upload "$tag" out/*.apk --repo "$GITHUB_REPOSITORY" --clobber
