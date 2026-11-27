@@ -164,13 +164,21 @@ object ControlManager {
         }
     }
 
+    private fun layoutVersion(text: String): Int = runCatching {
+        org.json.JSONObject(text).getJSONObject("info").optInt("versionCode", 0)
+    }.getOrDefault(0)
+
     private suspend fun unpackTridentControl(
         context: Context
     ) = withContext(Dispatchers.IO) {
         try {
             val file = File(PathManager.DIR_CONTROL_LAYOUTS, TRIDENT_LAYOUT_FILE)
-            if (!file.exists()) {
-                context.copyAssetFile(fileName = "trident_bedrock_layout.json", output = file, overwrite = false)
+            val assetVersion = context.assets.open("trident_bedrock_layout.json").use { input ->
+                layoutVersion(input.readBytes().decodeToString())
+            }
+            val localVersion = if (file.exists()) layoutVersion(file.readText()) else -1
+            if (localVersion < assetVersion) {
+                context.copyAssetFile(fileName = "trident_bedrock_layout.json", output = file, overwrite = true)
             }
         } catch (e: Exception) {
             Logger.warning(TAG, "Failed to unpack Trident control layout", e)
