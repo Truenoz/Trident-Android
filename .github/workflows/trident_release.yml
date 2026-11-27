@@ -40,6 +40,10 @@ jobs:
             echo "::error::TRIDENT_SIGNING_PASSWORD tiene que tener al menos 12 caracteres."
             exit 1
           fi
+          if printf '%s' "$TRIDENT_SIGNING_PASSWORD" | LC_ALL=C grep -q '[^ -~]'; then
+            echo "::error::TRIDENT_SIGNING_PASSWORD tiene letras como ñ, tildes o emojis. Java no los acepta en llaves de firma: usá solo letras sin tilde, números y símbolos comunes."
+            exit 1
+          fi
 
       - name: Crear la llave de firma (solo la primera vez)
         run: |
