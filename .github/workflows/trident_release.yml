@@ -25,6 +25,11 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
 
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
       - name: Comprobar la contraseña de firma
         run: |
           if [ -z "$TRIDENT_SIGNING_PASSWORD" ]; then
@@ -39,8 +44,15 @@ jobs:
       - name: Crear la llave de firma (solo la primera vez)
         run: |
           if [ -f ZalithLauncher/trident.jks.enc ]; then
-            echo "La llave ya existe."
-            exit 0
+            if openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in ZalithLauncher/trident.jks.enc -out "$RUNNER_TEMP/check.jks" -pass env:TRIDENT_SIGNING_PASSWORD 2>/dev/null \
+              && keytool -list -keystore "$RUNNER_TEMP/check.jks" -storetype PKCS12 -storepass:env TRIDENT_SIGNING_PASSWORD >/dev/null 2>&1; then
+              rm -f "$RUNNER_TEMP/check.jks"
+              echo "La llave ya existe y abre con la contraseña."
+              exit 0
+            fi
+            rm -f "$RUNNER_TEMP/check.jks"
+            echo "::error::La llave guardada no abre con TRIDENT_SIGNING_PASSWORD. Si cambiaste la contraseña, volvé a poner la anterior."
+            exit 1
           fi
           keytool -genkeypair -keystore "$RUNNER_TEMP/trident.jks" -storetype PKCS12 -alias trident \
             -keyalg RSA -keysize 4096 -validity 36500 \
@@ -48,6 +60,7 @@ jobs:
             -dname "CN=Trident Client, O=Trident Client"
           openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
             -in "$RUNNER_TEMP/trident.jks" -out ZalithLauncher/trident.jks.enc -pass env:TRIDENT_SIGNING_PASSWORD
+          keytool -list -keystore "$RUNNER_TEMP/trident.jks" -storetype PKCS12 -storepass:env TRIDENT_SIGNING_PASSWORD >/dev/null
           rm -f "$RUNNER_TEMP/trident.jks"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
