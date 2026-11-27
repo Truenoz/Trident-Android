@@ -125,7 +125,18 @@ jobs:
       - name: Compilar
         run: |
           chmod +x gradlew
-          ./gradlew ZalithLauncher:assembleRelease -Darch=${{ matrix.arch }}
+          set -o pipefail
+          ./gradlew ZalithLauncher:assembleRelease -Darch=${{ matrix.arch }} --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Mostrar el error
+        if: failure()
+        run: |
+          grep -nE "^e: |error:|What went wrong|Execution failed|Caused by|Exception|Missing class|R8:|ERROR" "$RUNNER_TEMP/build.log" | head -n 40 | while IFS= read -r l; do
+            echo "::error::$l"
+          done
+          grep -n -A12 "What went wrong" "$RUNNER_TEMP/build.log" | head -n 40 | while IFS= read -r l; do
+            echo "::error::$l"
+          done
 
       - name: Nombre final
         run: |
